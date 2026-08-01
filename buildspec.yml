@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing Terraform..."
+      # Tip: Use a stable version like 1.5.0 if 1.14 is too new/unstable
+      - curl -O https://releases.hashicorp.com/terraform/1.7.5/terraform_1.7.5_linux_amd64.zip
+      - unzip -o terraform_1.7.5_linux_amd64.zip -d /tmp/terraform_bin
+      - mv /tmp/terraform_bin/terraform /usr/local/bin/
+      - chmod +x /usr/local/bin/terraform
+      - rm terraform_1.7.5_linux_amd64.zip
+  build:
+    commands:
+      - echo "Starting Terraform Build..."
+      - cd terraform
+      - export TF_LOG=ERROR
+      - terraform init -input=false
+      - terraform validate
+      - echo "Checking for drift..."
+      - terraform plan -detailed-exitcode -out=tfplan || DRIFT=$?
+      - if [ "$DRIFT" = "2" ]; then echo "⚠️ DRIFT DETECTED - Infrastructure differs from code"; fi
+      - terraform apply -auto-approve tfplan
+artifacts:
+  files:
+    - '**/*'
+# End of file: buildspec.yml
